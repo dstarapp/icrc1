@@ -43,6 +43,18 @@ shared ({ caller = ledger_canister_id }) actor class Archive() : async T.Archive
 
     stable let txStore = StableTrieMap.new<Nat, [MemoryBlock]>();
 
+    //return cycles balance
+    public query func wallet_balance() : async Nat {
+        return ExperimentalCycles.balance();
+    };
+
+    //cycles deposit
+    public func wallet_receive() : async { accepted : Nat64 } {
+        let available = ExperimentalCycles.available();
+        let accepted = ExperimentalCycles.accept(Nat.min(available, 10_000_000));
+        { accepted = Nat64.fromNat(accepted) };
+    };
+
     public shared ({ caller }) func append_transactions(txs : [Transaction]) : async Result.Result<(), Text> {
 
         if (caller != ledger_canister_id) {
@@ -68,7 +80,7 @@ shared ({ caller = ledger_canister_id }) actor class Archive() : async T.Archive
                                 Iter.map(txs.vals(), store_tx),
                             ),
                             BUCKET_SIZE,
-                        ),
+                        )
                     );
 
                     if (new_bucket.size() == BUCKET_SIZE) {
@@ -160,7 +172,7 @@ shared ({ caller = ledger_canister_id }) actor class Archive() : async T.Archive
             Iter.map(
                 Itertools.take(iter, MAX_TRANSACTIONS_PER_REQUEST),
                 get_tx,
-            ),
+            )
         );
 
         { transactions };
